@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Wins" />
+  <title>Wins Log</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+      --surface2: #22223a;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.15);
+      --text: #f0eef8;
+      --muted: #8884a8;
+      --accent: #7c6ef5;
+      --accent-dim: rgba(124,110,245,0.15);
+      --green: #4ade80;
+      --green-dim: rgba(74,222,128,0.12);
+      --red: #f87171;
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    #app {
+      max-width: 480px;
+      margin: 0 auto;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: 0 0 6rem;
+    }
+
+    /* Header */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg);
+      padding: 1.25rem 1.25rem 0.75rem;
+      border-bottom: 0.5px solid var(--border);
+    }
+
+    .topbar-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .app-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--text);
+    }
+
+    .app-title span {
+      color: var(--accent);
+    }
+
+    .today-badge {
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--accent-dim);
+      color: var(--accent);
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 0.5px solid rgba(124,110,245,0.3);
+    }
+
+    .streak {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* Input area */
+    .input-area {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      background: var(--bg);
+      border-top: 0.5px solid var(--border);
+      padding: 0.75rem 1rem 1.25rem;
+      z-index: 10;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .win-input {
+      flex: 1;
+      background: var(--surface);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 15px;
+      color: var(--text);
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .win-input:focus {
+      border-color: var(--accent);
+    }
+
+    .win-input::placeholder { color: var(--muted); }
+
+    .add-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      width: 46px;
+      height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .add-btn:active { transform: scale(0.94); opacity: 0.85; }
+
+    .add-btn svg { width: 22px; height: 22px; fill: none; stroke: #fff; stroke-width: 2.5; stroke-linecap: round; }
+
+    /* Stats row */
+    .stats {
+      display: flex;
+      gap: 8px;
+      padding: 1rem 1.25rem 0.5rem;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 2px;
+    }
+
+    .stat-num {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.5px;
+    }
+
+    /* List */
+    .list-area {
+      flex: 1;
+      padding: 0 1.25rem;
+    }
+
+    .day-group { margin-bottom: 1.5rem; }
+
+    .day-header {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.75rem 0 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 0.5px solid var(--border);
+      margin-bottom: 4px;
+    }
+
+    .day-count {
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
+      font-size: 12px;
+    }
+
+    .win-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 0.5px solid var(--border);
+      position: relative;
+    }
+
+    .win-item:last-child { border-bottom: none; }
+
+    .check-icon {
+      width: 22px;
+      height: 22px;
+      background: var(--green-dim);
+      border: 0.5px solid rgba(74,222,128,0.25);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .check-icon svg {
+      width: 12px;
+      height: 12px;
+      stroke: var(--green);
+      stroke-width: 2.5;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .win-text {
+      flex: 1;
+      font-size: 15px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .win-meta {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .del-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      padding: 2px;
+      opacity: 0;
+      transition: opacity 0.1s;
+      line-height: 1;
+    }
+
+    .win-item:hover .del-btn,
+    .win-item:focus-within .del-btn { opacity: 1; }
+
+    .del-btn svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+    }
+
+    .del-btn:active { color: var(--red); }
+
+    /* Empty state */
+    .empty {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--muted);
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 1rem;
+      opacity: 0.3;
+    }
+
+    .empty p { font-size: 15px; line-height: 1.6; }
+
+    /* Swipe to delete (mobile) */
+    .win-item { touch-action: pan-y; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="app-title">wins<span>.</span></div>
+      <div class="today-badge" id="today-badge">0 today</div>
+    </div>
+    <div class="streak" id="streak-line">Start logging your accomplishments</div>
+  </div>
+
+  <div class="stats" id="stats" style="display:none">
+    <div class="stat-card">
+      <div class="stat-label">Today</div>
+      <div class="stat-num" id="stat-today">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">This week</div>
+      <div class="stat-num" id="stat-week">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">All time</div>
+      <div class="stat-num" id="stat-all">0</div>
+    </div>
+  </div>
+
+  <div class="list-area" id="list-area"></div>
+
+  <div class="input-area">
+    <div class="input-row">
+      <input class="win-input" id="win-input" type="text" placeholder="What did you just finish?" maxlength="200" autocomplete="off" />
+      <button class="add-btn" id="add-btn" aria-label="Log win">
+        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORE = 'wins_pwa_v1';
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORE)) || []; }
+  catch { return []; }
+}
+
+function save(wins) {
+  localStorage.setItem(STORE, JSON.stringify(wins));
+}
+
+function fmt(ts) {
+  return new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function dayKey(ts) { return new Date(ts).toDateString(); }
+
+function dayLabel(ts) {
+  const d = new Date(ts);
+  const t = new Date();
+  const y = new Date(); y.setDate(t.getDate() - 1);
+  if (d.toDateString() === t.toDateString()) return 'Today';
+  if (d.toDateString() === y.toDateString()) return 'Yesterday';
+  return d.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+}
+
+function weekStart() {
+  const d = new Date(); d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - d.getDay());
+  return d.getTime();
+}
+
+let wins = load();
+
+function render() {
+  const today = new Date().toDateString();
+  const todayWins = wins.filter(w => dayKey(w.ts) === today);
+  const weekWins = wins.filter(w => w.ts >= weekStart());
+
+  document.getElementById('today-badge').textContent = todayWins.length + (todayWins.length === 1 ? ' today' : ' today');
+  document.getElementById('stat-today').textContent = todayWins.length;
+  document.getElementById('stat-week').textContent = weekWins.length;
+  document.getElementById('stat-all').textContent = wins.length;
+
+  const stats = document.getElementById('stats');
+  stats.style.display = wins.length ? 'flex' : 'none';
+
+  const streakLine = document.getElementById('streak-line');
+  if (wins.length === 0) {
+    streakLine.textContent = 'Start logging your accomplishments';
+  } else {
+    streakLine.textContent = todayWins.length === 0
+      ? 'Nothing logged yet today — what have you done?'
+      : `${todayWins.length} thing${todayWins.length !== 1 ? 's' : ''} done today. Keep going.`;
+  }
+
+  const area = document.getElementById('list-area');
+  if (wins.length === 0) {
+    area.innerHTML = '<div class="empty"><div class="empty-icon">🏁</div><p>Tap the + and log your first win.<br>Every small thing counts.</p></div>';
+    return;
+  }
+
+  const groups = {};
+  [...wins].reverse().forEach(w => {
+    const k = dayKey(w.ts);
+    if (!groups[k]) groups[k] = { label: dayLabel(w.ts), items: [] };
+    groups[k].items.push(w);
+  });
+
+  area.innerHTML = Object.values(groups).map(g => `
+    <div class="day-group">
+      <div class="day-header">
+        ${g.label}
+        <span class="day-count">${g.items.length} item${g.items.length !== 1 ? 's' : ''}</span>
+      </div>
+      ${g.items.map(w => `
+        <div class="win-item">
+          <div class="check-icon">
+            <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="win-text">${escHtml(w.text)}</div>
+          <div class="win-meta">
+            <span>${fmt(w.ts)}</span>
+            <button class="del-btn" onclick="deleteWin('${w.id}')" aria-label="Delete">
+              <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function addWin() {
+  const input = document.getElementById('win-input');
+  const text = input.value.trim();
+  if (!text) return;
+  wins.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2), text, ts: Date.now() });
+  save(wins);
+  render();
+  input.value = '';
+  input.focus();
+}
+
+window.deleteWin = function(id) {
+  wins = wins.filter(w => w.id !== id);
+  save(wins);
+  render();
+};
+
+document.getElementById('add-btn').addEventListener('click', addWin);
+document.getElementById('win-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addWin();
+});
+
+render();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
