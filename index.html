@@ -442,23 +442,24 @@ function setReaction(id, reaction) {
 }
 
 // ── Share / Export ────────────────────────────────────────────────────────────
-function buildExportText(range) {
+function filterByRange(range) {
   const today = new Date().toDateString();
   const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-  let filtered = wins;
-  if (range === 'today') filtered = wins.filter(w => dayKey(w.ts) === today);
-  if (range === 'yesterday') filtered = wins.filter(w => dayKey(w.ts) === yesterday.toDateString());
-  if (range === 'week') filtered = wins.filter(w => w.ts >= weekStart());
+  if (range === 'today') return wins.filter(w => dayKey(w.ts) === today);
+  if (range === 'yesterday') return wins.filter(w => dayKey(w.ts) === yesterday.toDateString());
+  if (range === 'week') return wins.filter(w => w.ts >= weekStart());
+  return wins;
+}
 
+function buildExportText(range) {
+  const filtered = filterByRange(range);
   if (!filtered.length) return '(nothing logged in this range)';
-
   const groups = {};
   [...filtered].reverse().forEach(w => {
     const k = dayKey(w.ts);
     if (!groups[k]) groups[k] = { label: dayLabel(w.ts), items: [] };
     groups[k].items.push(w);
   });
-
   return Object.values(groups).map(g => {
     const lines = g.items.map(w => {
       const reaction = w.reaction ? w.reaction + ' ' : '';
@@ -467,7 +468,39 @@ function buildExportText(range) {
       return `• ${reaction}${w.text}${followup}${cat} (${fmt(w.ts)})`;
     }).join('\n');
     return `${g.label}\n${lines}`;
-  }).join('\n\n') + '\n\n— sent from wins.';
+  }).join('\n\n') + '\n\n— from wins.';
+}
+
+function buildExportCSV(range) {
+  const filtered = filterByRange(range);
+  if (!filtered.length) return 'date,time,text,category,reaction,followup\n';
+  const rows = [['date','time','text','category','reaction','followup']];
+  [...filtered].reverse().forEach(w => {
+    const d = new Date(w.ts);
+    rows.push([
+      d.toLocaleDateString(),
+      fmt(w.ts),
+      `"${w.text.replace(/"/g,'""')}"`,
+      w.category || '',
+      w.reaction || '',
+      hasFollowup(w.text) ? 'yes' : 'no'
+    ]);
+  });
+  return rows.map(r => r.join(',')).join('\n');
+}
+
+function downloadFile(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function dateStamp() {
+  return new Date().toISOString().slice(0,10);
 }
 
 let currentRange = 'today';
@@ -477,15 +510,17 @@ function openShareModal() {
   overlay.id = 'share-modal';
   overlay.innerHTML = `
     <div class="modal">
-      <div class="modal-title">Share your wins</div>
+      <div class="modal-title">Export your wins</div>
       <div class="modal-options">
         ${['today','yesterday','week','all'].map(r =>
           `<div class="modal-opt ${r === currentRange ? 'active' : ''}" data-range="${r}">${r === 'all' ? 'All time' : r.charAt(0).toUpperCase()+r.slice(1)}</div>`
         ).join('')}
       </div>
       <div class="modal-preview" id="share-preview">${buildExportText(currentRange)}</div>
-      <div class="modal-actions">
+      <div class="modal-actions" style="flex-wrap:wrap;gap:8px">
         <button class="modal-btn secondary" onclick="closeShareModal()">Cancel</button>
+        <button class="modal-btn secondary" onclick="doDownloadTxt()" style="flex:none;padding:12px 16px">⬇ .txt</button>
+        <button class="modal-btn secondary" onclick="doDownloadCSV()" style="flex:none;padding:12px 16px">⬇ .csv</button>
         <button class="modal-btn primary" onclick="doShare()">Share</button>
       </div>
     </div>`;
@@ -504,6 +539,16 @@ function openShareModal() {
 window.closeShareModal = function() {
   const m = document.getElementById('share-modal');
   if (m) m.remove();
+};
+
+window.doDownloadTxt = function() {
+  downloadFile(buildExportText(currentRange), `wins-${dateStamp()}.txt`, 'text/plain');
+  closeShareModal();
+};
+
+window.doDownloadCSV = function() {
+  downloadFile(buildExportCSV(currentRange), `wins-${dateStamp()}.csv`, 'text/csv');
+  closeShareModal();
 };
 
 window.doShare = async function() {
