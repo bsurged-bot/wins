@@ -40,3 +40,7 @@ To make changes, edit `index.html` directly in GitHub (tap the pencil icon) and 
 ---
 
 Built as a PWA — no app store, no install, no account needed.
+
+## License
+
+MIT License · Copyright (c) 2026 Eucalyptus Dari
